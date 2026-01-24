@@ -1,0 +1,107 @@
+package com.example.recipebook.ui.screen
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.example.recipebook.ui.viewmodel.RecipeBookUiState
+import com.example.recipebook.ui.widget.RecipeContent
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RecipeDetailScreen(
+    uiState: RecipeBookUiState,
+    onBackClick: () -> Unit,
+    onToggleFavourite: () -> Unit
+){
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Recipe") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    uiState.selectedRecipe?.let { recipe ->
+                        IconButton(onClick = onToggleFavourite) {
+                            Icon(
+                                Icons.Default.Favorite,
+                                contentDescription = "Favourite",
+                                tint = if ( uiState.favourites.any{ it.id == recipe.id }) Color.Red else Color.Gray
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    ){ paddingValues ->
+        when {
+            uiState.isRecipeLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            uiState.recipeError != null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(uiState.recipeError, color = Color.Red)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = onBackClick) {
+                            Text("Back")
+                        }
+                    }
+                }
+            }
+
+            uiState.selectedRecipe != null -> {
+                RecipeContent(
+                    recipe = uiState.selectedRecipe,
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("The recipe was not found")
+                }
+            }
+        }
+    }
+}
+
