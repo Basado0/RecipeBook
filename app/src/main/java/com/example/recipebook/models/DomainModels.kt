@@ -32,3 +32,9 @@ data class Recipe(
     val instructions: List<Instruction>
 )
 
+fun Recipe.toMeal(): Meal = Meal(
+    id = id,
+    title = title,
+    image = image
+)
+

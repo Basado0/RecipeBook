@@ -1,5 +1,5 @@
 package com.example.recipebook.api
 
 object ApiKey {
-    const val KEY = "your_api_key_here"
+    const val KEY = "4131a0cd1122400ba2883a4162914b37"
 }

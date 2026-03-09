@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,9 +38,9 @@ import com.example.recipebook.ui.widget.MealCard
 fun searchScreen(
     uiState: RecipeBookUiState,
     onSearchChange: (String) -> Unit,
-    onSearch: () -> Unit,
     onMealClick: (Meal) -> Unit,
     onNavigateToFavourites: () -> Unit,
+    onNavigateToHistory: () -> Unit,
     onToggleFavourite: (Int) -> Unit,
 
 ) {
@@ -48,6 +49,9 @@ fun searchScreen(
             TopAppBar(
                 title = { Text("Recipe Search") },
                 actions = {
+                    IconButton(onClick = onNavigateToHistory) {
+                        Icon(Icons.Default.Info, contentDescription = "History")
+                    }
                     // Кнопка избранного в правом верхнем углу
                     IconButton(onClick = onNavigateToFavourites) {
                         Icon(
@@ -81,7 +85,7 @@ fun searchScreen(
                 }
             }
             when {
-                uiState.isSearchLoading -> {
+                uiState.isSearchLoading or uiState.isCacheLoading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -104,13 +108,32 @@ fun searchScreen(
                                 color = Color.Red,
                                 modifier = Modifier.padding(bottom = 16.dp)
                             )
-                            Button(onClick = onSearch) {
-                                Text("Retry")
-                            }
                         }
 
                     }
 
+                }
+
+                uiState.query.isBlank() && uiState.searchResults.isNotEmpty() -> {
+                    Text("Last results:", modifier = Modifier.padding(16.dp))
+                    LazyColumn {
+                        items(uiState.searchResults) { meal ->
+                            MealCard(
+                                meal = meal,
+                                isFavourite = meal in uiState.favourites,
+                                onClick = { onMealClick(meal) }
+                            ) { onToggleFavourite(meal.id) }
+                        }
+                    }
+                }
+
+                uiState.query.isBlank() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Enter a recipe search query")
+                    }
                 }
 
                 uiState.searchResults.isEmpty() -> {
@@ -118,7 +141,7 @@ fun searchScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Enter a recipe search query")
+                        Text("No recipes found")
                     }
 
                 }

@@ -7,16 +7,26 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.recipebook.api.MealRepository
 import com.example.recipebook.api.MealSearchResult
+import com.example.recipebook.data.local.favourite.FavouriteRepository
+import com.example.recipebook.data.local.history.HistoryRepository
 import com.example.recipebook.models.Meal
 import com.example.recipebook.models.Recipe
+import com.example.recipebook.models.toMeal
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+private const val SEARCH_DEBOUNCE_MS = 500L
 data class RecipeBookUiState(
     val query: String = "",
     val searchResults: List<Meal> = emptyList(),
+    val history: List<Meal> = emptyList(),
+    val isCacheLoading: Boolean = true,
     val isSearchLoading: Boolean = false,
+    val isHistoryLoading: Boolean = false,
     val searchError: String? = null,
 
     val selectedRecipe: Recipe? = null,
@@ -26,64 +36,109 @@ data class RecipeBookUiState(
     val favourites: List<Meal> = emptyList()
 )
 
-class RecipeBookViewModel(private val repository: MealRepository = MealRepository()): ViewModel() {
+@HiltViewModel
+class RecipeBookViewModel @Inject constructor(
+    private val mealRepository: MealRepository,
+    private val favouriteRepository: FavouriteRepository,
+    private val historyRepository: HistoryRepository
+): ViewModel() {
     var uiState by mutableStateOf(RecipeBookUiState())
         private set
 
     private var searchJob: Job? = null
+
+    init {
+        observeFavourites()
+        loadCachedResults()
+        loadHistory()
+    }
+
+    private fun observeFavourites() {
+        viewModelScope.launch {
+            favouriteRepository.observeFavourites().collect { meals ->
+                uiState = uiState.copy(favourites = meals)
+            }
+        }
+    }
+
+    private fun loadCachedResults() {
+        viewModelScope.launch {
+            val cached = mealRepository.getLastCachedMeals()
+            uiState = uiState.copy(
+                searchResults = cached,
+                isCacheLoading = false
+            )
+        }
+    }
+
+    private fun loadHistory() {
+        viewModelScope.launch {
+            uiState = uiState.copy(isHistoryLoading = true)
+            val history = historyRepository.getHistory()
+            uiState = uiState.copy(
+                isHistoryLoading = false,
+                history = history
+            )
+        }
+    }
     fun updateSearchQuery(query: String) {
         uiState = uiState.copy(
             query = query
         )
         searchJob?.cancel()
+        if (query.isBlank()) {
+            uiState = uiState.copy(
+                isSearchLoading = false,
+                searchError = null,
+                searchResults = emptyList()
+            )
+            return
+        }
         searchJob = viewModelScope.launch{
-            delay(500)
+            delay(SEARCH_DEBOUNCE_MS)
             searchMeals()
         }
     }
-
+    private fun findMealById(mealId: Int): Meal? {
+        uiState.searchResults.find { it.id == mealId}?.let { return it }
+        val recipe = uiState.selectedRecipe
+        if (recipe != null && recipe.id == mealId) {
+            return Meal(id = recipe.id, title = recipe.title, image = recipe.image)
+        }
+        return null
+    }
     fun toggleFavourite(mealId: Int) {
-        val isCurrentlyFavourite = uiState.favourites.any { it.id == mealId }
-        if (isCurrentlyFavourite) {
-            val newFavourites = uiState.favourites.filter { it.id != mealId }
-            uiState = uiState.copy(
-                favourites = newFavourites
-            )
-        } else {
-            val mealToAdd = uiState.searchResults.find { it.id == mealId }
-            if (mealToAdd != null) {
-                val newFavourites = uiState.favourites + mealToAdd
-                uiState = uiState.copy(
-                    favourites = newFavourites
-                )
+        viewModelScope.launch {
+            val isCurrentlyFavourite = uiState.favourites.any { it.id == mealId }
+            if (isCurrentlyFavourite) {
+                favouriteRepository.removeFromFavourites(mealId)
+            } else {
+                    val meal = findMealById(mealId) ?: return@launch
+                    favouriteRepository.addToFavourites(meal)
+                }
             }
         }
-    }
 
-        fun searchMeals() {
-            if (uiState.query.isBlank()) {
-                uiState = uiState.copy(searchError = "Enter the search query")
-                return
-            }
+        //Теперь suspend, запускается в job и сетевой запрос корректно отменяется
+        private suspend fun searchMeals() {
+
             uiState = uiState.copy(
                 isSearchLoading = true,
                 searchError = null,
                 searchResults = emptyList()
             )
 
-            viewModelScope.launch {
-                try {
-                    val results = repository.searchMeals(uiState.query)
-                    uiState = uiState.copy(
-                        isSearchLoading = false,
-                        searchResults = results
-                    )
-                } catch (ex: Exception) {
-                    uiState = uiState.copy(
-                        isSearchLoading = false,
-                        searchError = "Error in the search: ${ex.message}"
-                    )
-                }
+            try {
+                val results = mealRepository.searchMeals(uiState.query)
+                uiState = uiState.copy(
+                    isSearchLoading = false,
+                    searchResults = results
+                )
+            } catch (ex: Exception) {
+                if (ex is CancellationException) throw ex
+                uiState = uiState.copy(
+                    isSearchLoading = false,
+                    searchError = "Error in the search: ${ex.message}")
             }
         }
 
@@ -96,7 +151,9 @@ class RecipeBookViewModel(private val repository: MealRepository = MealRepositor
 
             viewModelScope.launch {
                 try {
-                    val recipe = repository.getRecipe(mealId)
+                    val recipe = mealRepository.getRecipe(mealId)
+                    historyRepository.addToHistory(recipe.toMeal())
+                    loadHistory()
                     uiState = uiState.copy(
                         selectedRecipe = recipe,
                         isRecipeLoading = false
@@ -109,10 +166,8 @@ class RecipeBookViewModel(private val repository: MealRepository = MealRepositor
                 }
             }
         }
-
         fun clearSelection() {
             uiState = uiState.copy(
-                selectedRecipe = null,
                 recipeError = null
             )
         }

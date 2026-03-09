@@ -2,6 +2,7 @@ package com.example.recipebook
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -10,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.recipebook.ui.screen.FavouritesScreen
+import com.example.recipebook.ui.screen.HistoryScreen
 import com.example.recipebook.ui.screen.RecipeDetailScreen
 import com.example.recipebook.ui.screen.searchScreen
 import com.example.recipebook.ui.viewmodel.RecipeBookViewModel
@@ -21,11 +23,13 @@ sealed class Screen(val route: String){
     object Detail: Screen("detail/{mealId}"){
         fun createRoute(mealId:Int): String = "detail/$mealId"
     }
+
+    object History: Screen("history")
 }
 
 @Composable
 fun RecipeBookApp(){
-    val holder: RecipeBookViewModel = viewModel()
+    val holder: RecipeBookViewModel = hiltViewModel()
     val navController: NavHostController = rememberNavController()
 
     NavHost(
@@ -33,16 +37,15 @@ fun RecipeBookApp(){
         startDestination = Screen.Search.route
     ){
         composable(route = Screen.Search.route){
-            val state =  holder.uiState
             searchScreen(
-                uiState = state,
+                uiState = holder.uiState,
                 onSearchChange = holder::updateSearchQuery,
-                onSearch = holder::searchMeals,
                 onMealClick = { meal ->
                     navController.navigate(Screen.Detail.createRoute(meal.id))
                 },
                 onNavigateToFavourites = { navController.navigate(Screen.Favourites.route) },
-                onToggleFavourite = holder::toggleFavourite
+                onToggleFavourite = holder::toggleFavourite,
+                onNavigateToHistory = { navController.navigate(Screen.History.route)}
             )
         }
 
@@ -86,6 +89,19 @@ fun RecipeBookApp(){
                 },
                 onToggleFavourite = holder::toggleFavourite,
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.History.route
+        ){
+            HistoryScreen(
+                uiState = holder.uiState,
+                onMealClick = { meal ->
+                    navController.navigate(Screen.Detail.createRoute(meal.id))
+                },
+                onToggleFavourite = holder::toggleFavourite,
+                onBackClick = { navController.popBackStack() }
             )
         }
     }
