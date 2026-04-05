@@ -25,11 +25,12 @@ import com.example.recipebook.models.Meal
 fun MealCard(
     meal: Meal,
     isFavourite: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onToggleFavourite: () -> Unit
 ){
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         onClick = onClick

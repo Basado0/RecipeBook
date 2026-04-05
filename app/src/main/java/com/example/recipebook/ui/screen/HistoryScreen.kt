@@ -20,7 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.recipebook.models.Meal
-import com.example.recipebook.ui.viewmodel.RecipeBookUiState
+import com.example.recipebook.viewmodel.RecipeBookUiState
 import com.example.recipebook.ui.widget.MealCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +45,14 @@ fun HistoryScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
             when {
+
+                uiState.historyError != null -> {
+                    Text(
+                        text = uiState.historyError,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
                 uiState.isHistoryLoading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }

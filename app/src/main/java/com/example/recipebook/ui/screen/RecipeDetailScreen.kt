@@ -22,7 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.recipebook.ui.viewmodel.RecipeBookUiState
+import com.example.recipebook.viewmodel.RecipeBookUiState
 import com.example.recipebook.ui.widget.RecipeContent
 
 @OptIn(ExperimentalMaterial3Api::class)

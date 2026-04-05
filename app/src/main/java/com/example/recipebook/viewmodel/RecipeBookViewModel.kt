@@ -1,4 +1,4 @@
-package com.example.recipebook.ui.viewmodel
+package com.example.recipebook.viewmodel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -6,7 +6,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.recipebook.api.MealRepository
-import com.example.recipebook.api.MealSearchResult
 import com.example.recipebook.data.local.favourite.FavouriteRepository
 import com.example.recipebook.data.local.history.HistoryRepository
 import com.example.recipebook.models.Meal
@@ -19,7 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-private const val SEARCH_DEBOUNCE_MS = 500L
+internal const val SEARCH_DEBOUNCE_MS = 500L
 data class RecipeBookUiState(
     val query: String = "",
     val searchResults: List<Meal> = emptyList(),
@@ -28,6 +27,8 @@ data class RecipeBookUiState(
     val isSearchLoading: Boolean = false,
     val isHistoryLoading: Boolean = false,
     val searchError: String? = null,
+    val cacheError: String? = null,
+    val historyError: String? = null,
 
     val selectedRecipe: Recipe? = null,
     val isRecipeLoading: Boolean = false,
@@ -63,22 +64,40 @@ class RecipeBookViewModel @Inject constructor(
 
     private fun loadCachedResults() {
         viewModelScope.launch {
-            val cached = mealRepository.getLastCachedMeals()
-            uiState = uiState.copy(
-                searchResults = cached,
-                isCacheLoading = false
-            )
+            try {
+                val cached = mealRepository.getLastCachedMeals()
+                uiState = uiState.copy(
+                    searchResults = cached,
+                    isCacheLoading = false,
+                    cacheError = null
+                )
+            } catch (ex: Exception) {
+                if (ex is CancellationException) throw ex
+                uiState = uiState.copy(
+                    isCacheLoading = false,
+                    cacheError = "Could not load cached results"
+                )
+            }
         }
     }
 
     private fun loadHistory() {
         viewModelScope.launch {
             uiState = uiState.copy(isHistoryLoading = true)
-            val history = historyRepository.getHistory()
-            uiState = uiState.copy(
-                isHistoryLoading = false,
-                history = history
-            )
+            try {
+                val history = historyRepository.getHistory()
+                uiState = uiState.copy(
+                    isHistoryLoading = false,
+                    history = history,
+                    historyError = null
+                )
+            } catch (ex: Exception) {
+                if (ex is CancellationException) throw ex
+                uiState = uiState.copy(
+                    isHistoryLoading = false,
+                    historyError = "Could not load history"
+                )
+            }
         }
     }
     fun updateSearchQuery(query: String) {
@@ -87,11 +106,7 @@ class RecipeBookViewModel @Inject constructor(
         )
         searchJob?.cancel()
         if (query.isBlank()) {
-            uiState = uiState.copy(
-                isSearchLoading = false,
-                searchError = null,
-                searchResults = emptyList()
-            )
+            loadCachedResults() //теперь показываются последние результаты поиска при пустой строке
             return
         }
         searchJob = viewModelScope.launch{
@@ -135,10 +150,24 @@ class RecipeBookViewModel @Inject constructor(
                     searchResults = results
                 )
             } catch (ex: Exception) {
-                if (ex is CancellationException) throw ex
+                if (ex is CancellationException) {
+                    uiState = uiState.copy(isSearchLoading = false)
+                    throw ex
+                }
                 uiState = uiState.copy(
                     isSearchLoading = false,
                     searchError = "Error in the search: ${ex.message}")
+            }
+        }
+
+        fun retrySearch() {
+            val currentQuery = uiState.query
+            if (currentQuery.isNotBlank()) {
+                searchJob?.cancel()
+                searchJob = viewModelScope.launch {
+                    delay(SEARCH_DEBOUNCE_MS)
+                    searchMeals()
+                }
             }
         }
 
@@ -159,9 +188,10 @@ class RecipeBookViewModel @Inject constructor(
                         isRecipeLoading = false
                     )
                 } catch (ex: Exception) {
+                    if (ex is CancellationException) throw ex // обработка CancellationException
                     uiState = uiState.copy(
                         isRecipeLoading = false,
-                        recipeError = "Couldn't upload recipe"
+                        recipeError = "Couldn't load recipe"
                     )
                 }
             }

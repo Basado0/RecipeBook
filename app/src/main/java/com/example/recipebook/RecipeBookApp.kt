@@ -3,7 +3,6 @@ package com.example.recipebook
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,8 +12,8 @@ import androidx.navigation.navArgument
 import com.example.recipebook.ui.screen.FavouritesScreen
 import com.example.recipebook.ui.screen.HistoryScreen
 import com.example.recipebook.ui.screen.RecipeDetailScreen
-import com.example.recipebook.ui.screen.searchScreen
-import com.example.recipebook.ui.viewmodel.RecipeBookViewModel
+import com.example.recipebook.ui.screen.SearchScreen
+import com.example.recipebook.viewmodel.RecipeBookViewModel
 
 sealed class Screen(val route: String){
     object Search: Screen("search")
@@ -37,7 +36,7 @@ fun RecipeBookApp(){
         startDestination = Screen.Search.route
     ){
         composable(route = Screen.Search.route){
-            searchScreen(
+            SearchScreen(
                 uiState = holder.uiState,
                 onSearchChange = holder::updateSearchQuery,
                 onMealClick = { meal ->
