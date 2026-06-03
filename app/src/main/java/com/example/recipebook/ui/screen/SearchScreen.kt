@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,7 +44,7 @@ fun SearchScreen(
     onNavigateToFavourites: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onToggleFavourite: (Int) -> Unit,
-
+    onRetry: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -56,7 +57,6 @@ fun SearchScreen(
                             contentDescription = "History"
                         )
                     }
-                    // Кнопка избранного в правом верхнем углу
                     IconButton(onClick = onNavigateToFavourites) {
                         Icon(
                             imageVector = Icons.Outlined.Favorite,
@@ -72,7 +72,7 @@ fun SearchScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Закрепленная сверху поисковая строка с отступами
+            // Поисковая строка
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -84,12 +84,15 @@ fun SearchScreen(
                         value = uiState.query,
                         onValueChange = onSearchChange,
                         label = { Text("Name of the dish") },
-                        modifier = Modifier.weight(1f).testTag("search_field")
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("search_field")
                     )
                 }
             }
+
             when {
-                uiState.isSearchLoading or uiState.isCacheLoading -> {
+                uiState.isSearchLoading || uiState.isCacheLoading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -114,10 +117,11 @@ fun SearchScreen(
                                 color = Color.Red,
                                 modifier = Modifier.padding(bottom = 16.dp)
                             )
+                            Button(onClick = onRetry) {
+                                Text("Retry")
+                            }
                         }
-
                     }
-
                 }
 
                 uiState.query.isBlank() && uiState.cacheError != null -> {
@@ -138,7 +142,7 @@ fun SearchScreen(
                         items(uiState.searchResults) { meal ->
                             MealCard(
                                 meal = meal,
-                                isFavourite = meal in uiState.favourites,
+                                isFavourite = uiState.favourites.any { it.id == meal.id },
                                 onClick = { onMealClick(meal) }
                             ) { onToggleFavourite(meal.id) }
                         }
@@ -161,7 +165,6 @@ fun SearchScreen(
                     ) {
                         Text("No recipes found")
                     }
-
                 }
 
                 else -> {
@@ -169,7 +172,7 @@ fun SearchScreen(
                         itemsIndexed(uiState.searchResults) { index, meal ->
                             MealCard(
                                 meal = meal,
-                                isFavourite = meal in uiState.favourites,
+                                isFavourite = uiState.favourites.any { it.id == meal.id },
                                 modifier = Modifier.testTag("search_result_item_$index"),
                                 onClick = { onMealClick(meal) }
                             ) { onToggleFavourite(meal.id) }
