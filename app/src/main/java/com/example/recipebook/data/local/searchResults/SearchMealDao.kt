@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SearchMealDao {
@@ -15,5 +16,9 @@ interface SearchMealDao {
 
     @Query("SELECT * FROM ${SearchMealEntity.TABLE_NAME}")
     suspend fun getAll(): List<SearchMealEntity>
+
+    // Flow-версия (реактивное наблюдение за кэшем)
+    @Query("SELECT * FROM ${SearchMealEntity.TABLE_NAME}")
+    fun observeAll(): Flow<List<SearchMealEntity>> // Flow вместо suspend
 
 }

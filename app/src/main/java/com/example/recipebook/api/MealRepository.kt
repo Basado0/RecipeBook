@@ -10,10 +10,13 @@ import com.example.recipebook.models.Recipe
 import com.example.recipebook.models.Step
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import okhttp3.Dispatcher
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
 
 @Singleton
 class MealRepository @Inject constructor (
@@ -36,14 +39,38 @@ class MealRepository @Inject constructor (
     suspend fun getLastCachedMeals(): List<Meal> = withContext(Dispatchers.IO) {
         searchMealDao.getAll().map { it.toMeal() }
     }
+
+    //Flow метод (реактивное наблюдение за кэшем)
+    fun observeCachedMeals(): Flow<List<Meal>> =
+        searchMealDao.observeAll().map { entities ->
+            entities.map { it.toMeal() }
+        }
+
     suspend fun getRecipe(id: Int): Recipe = withContext(Dispatchers.IO) {
-        val infoDeferred = async {api.getRecipeInformation(id)}
-        val instructionsDeferred = async { api.getAnalyzedInstructions(id) }
+        try {
+            val infoDeferred = async {
+                try {
+                    api.getRecipeInformation(id)
+                } catch (e: Exception) {
+                    throw Exception("Failed to load recipe info: ${e.message}")
+                }
+            }
 
-        val info = infoDeferred.await()
-        val instructions = instructionsDeferred.await()
+            val instructionsDeferred = async {
+                try {
+                    api.getAnalyzedInstructions(id)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }
 
-        info.toRecipe(instructions)
+            val info = infoDeferred.await()
+            val instructions = instructionsDeferred.await()
+
+            info.toRecipe(instructions)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            throw Exception("Failed to load recipe: ${e.message}")
+        }
     }
-
 }

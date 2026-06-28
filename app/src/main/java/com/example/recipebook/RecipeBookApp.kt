@@ -2,7 +2,9 @@ package com.example.recipebook
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -31,20 +33,23 @@ fun RecipeBookApp(){
     val holder: RecipeBookViewModel = hiltViewModel()
     val navController: NavHostController = rememberNavController()
 
+    val uiState by holder.uiState.collectAsStateWithLifecycle()
+
     NavHost(
         navController = navController,
         startDestination = Screen.Search.route
     ){
         composable(route = Screen.Search.route){
             SearchScreen(
-                uiState = holder.uiState,
+                uiState = uiState,
                 onSearchChange = holder::updateSearchQuery,
                 onMealClick = { meal ->
                     navController.navigate(Screen.Detail.createRoute(meal.id))
                 },
                 onNavigateToFavourites = { navController.navigate(Screen.Favourites.route) },
                 onToggleFavourite = holder::toggleFavourite,
-                onNavigateToHistory = { navController.navigate(Screen.History.route)}
+                onNavigateToHistory = { navController.navigate(Screen.History.route)},
+                onRetry = holder::retrySearch
             )
         }
 
@@ -66,13 +71,16 @@ fun RecipeBookApp(){
                 }
             }
             RecipeDetailScreen(
-               uiState = holder.uiState,
+               uiState = uiState,
                 onBackClick = {
                     holder.clearSelection()
                     navController.popBackStack()
                 },
                 onToggleFavourite = {
                     mealId?.let { holder.toggleFavourite(it) }
+                },
+                onRetry = {
+                    holder.retryLoadRecipe()
                 }
             )
         }
@@ -80,9 +88,8 @@ fun RecipeBookApp(){
         composable(
             route = Screen.Favourites.route
         ){
-            val state = holder.uiState
             FavouritesScreen(
-                uiState = state,
+                uiState = uiState,
                 onMealClick = { meal ->
                     navController.navigate(Screen.Detail.createRoute(meal.id))
                 },
@@ -95,7 +102,7 @@ fun RecipeBookApp(){
             route = Screen.History.route
         ){
             HistoryScreen(
-                uiState = holder.uiState,
+                uiState = uiState,
                 onMealClick = { meal ->
                     navController.navigate(Screen.Detail.createRoute(meal.id))
                 },

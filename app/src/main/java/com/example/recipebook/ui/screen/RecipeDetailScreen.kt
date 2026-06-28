@@ -1,7 +1,9 @@
 package com.example.recipebook.ui.screen
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -30,7 +32,8 @@ import com.example.recipebook.ui.widget.RecipeContent
 fun RecipeDetailScreen(
     uiState: RecipeBookUiState,
     onBackClick: () -> Unit,
-    onToggleFavourite: () -> Unit
+    onToggleFavourite: () -> Unit,
+    onRetry: () -> Unit = {}
 ){
     Scaffold(
         topBar = {
@@ -47,7 +50,7 @@ fun RecipeDetailScreen(
                             Icon(
                                 Icons.Default.Favorite,
                                 contentDescription = "Favourite",
-                                tint = if ( uiState.favourites.any{ it.id == recipe.id }) Color.Red else Color.Gray
+                                tint = if (uiState.favourites.any{ it.id == recipe.id }) Color.Red else Color.Gray
                             )
                         }
                     }
@@ -77,8 +80,13 @@ fun RecipeDetailScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(uiState.recipeError, color = Color.Red)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onBackClick) {
-                            Text("Back")
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = onBackClick) {
+                                Text("Back")
+                            }
+                            Button(onClick = onRetry) {
+                                Text("Retry")
+                            }
                         }
                     }
                 }

@@ -73,7 +73,7 @@ fun HistoryScreen(
                         items(uiState.history) { meal ->
                             MealCard(
                                 meal = meal,
-                                isFavourite = meal in uiState.favourites,
+                                isFavourite = uiState.favourites.any { it.id == meal.id},
                                 onClick = { onMealClick(meal) }
                             ) { onToggleFavourite(meal.id) }
                         }
