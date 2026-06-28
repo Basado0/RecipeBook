@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -27,15 +27,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.recipebook.models.Meal
-import com.example.recipebook.ui.viewmodel.RecipeBookUiState
+import com.example.recipebook.viewmodel.RecipeBookUiState
 import com.example.recipebook.ui.widget.MealCard
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun searchScreen(
+fun SearchScreen(
     uiState: RecipeBookUiState,
     onSearchChange: (String) -> Unit,
     onMealClick: (Meal) -> Unit,
@@ -50,7 +51,10 @@ fun searchScreen(
                 title = { Text("Recipe Search") },
                 actions = {
                     IconButton(onClick = onNavigateToHistory) {
-                        Icon(Icons.Default.Info, contentDescription = "History")
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = "History"
+                        )
                     }
                     // Кнопка избранного в правом верхнем углу
                     IconButton(onClick = onNavigateToFavourites) {
@@ -80,7 +84,7 @@ fun searchScreen(
                         value = uiState.query,
                         onValueChange = onSearchChange,
                         label = { Text("Name of the dish") },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).testTag("search_field")
                     )
                 }
             }
@@ -90,7 +94,9 @@ fun searchScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(
+                            modifier = Modifier.testTag("loading_indicator")
+                        )
                     }
                 }
 
@@ -112,6 +118,18 @@ fun searchScreen(
 
                     }
 
+                }
+
+                uiState.query.isBlank() && uiState.cacheError != null -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = uiState.cacheError,
+                            color = Color.Red
+                        )
+                    }
                 }
 
                 uiState.query.isBlank() && uiState.searchResults.isNotEmpty() -> {
@@ -148,10 +166,11 @@ fun searchScreen(
 
                 else -> {
                     LazyColumn {
-                        items(uiState.searchResults) { meal ->
+                        itemsIndexed(uiState.searchResults) { index, meal ->
                             MealCard(
                                 meal = meal,
                                 isFavourite = meal in uiState.favourites,
+                                modifier = Modifier.testTag("search_result_item_$index"),
                                 onClick = { onMealClick(meal) }
                             ) { onToggleFavourite(meal.id) }
                         }

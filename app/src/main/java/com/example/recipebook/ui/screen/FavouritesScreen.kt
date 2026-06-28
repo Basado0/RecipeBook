@@ -24,7 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.recipebook.models.Meal
-import com.example.recipebook.ui.viewmodel.RecipeBookUiState
+import com.example.recipebook.viewmodel.RecipeBookUiState
 import com.example.recipebook.ui.widget.MealCard
 
 @OptIn(ExperimentalMaterial3Api::class)
