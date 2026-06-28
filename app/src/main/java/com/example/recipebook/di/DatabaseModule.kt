@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import com.example.recipebook.data.local.favourite.FavouriteDao
 import com.example.recipebook.data.local.RecipeBookDatabase
+import com.example.recipebook.data.local.UserEntities.UserColletcions.CollectionDao
+import com.example.recipebook.data.local.UserEntities.UserRecipes.UserRecipeDao
 import com.example.recipebook.data.local.history.HistoryDao
 import com.example.recipebook.data.local.searchResults.SearchMealDao
 import dagger.Module
@@ -36,4 +38,10 @@ object DatabaseModule {
 
     @Provides
     fun provideHistoryDao(database: RecipeBookDatabase): HistoryDao = database.historyDao()
+
+    @Provides
+    fun provideUserRecipeDao(db: RecipeBookDatabase): UserRecipeDao = db.userRecipeDao()
+
+    @Provides
+    fun provideCollectionDao(db: RecipeBookDatabase): CollectionDao = db.collectionDao()
 }

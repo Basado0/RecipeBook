@@ -28,7 +28,6 @@ object NetworkModule {
             level = HttpLoggingInterceptor.Level.BASIC
         }
 
-        // Interceptor для добавления API ключа
         val apiKeyInterceptor = Interceptor { chain ->
             val originalRequest = chain.request()
             val requestWithApiKey = originalRequest.newBuilder()

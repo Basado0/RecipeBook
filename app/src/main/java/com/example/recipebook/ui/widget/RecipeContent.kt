@@ -36,11 +36,12 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.recipebook.models.DisplayRecipe
 import com.example.recipebook.models.Recipe
 
 @Composable
 fun RecipeContent(
-    recipe: Recipe,
+    recipe: DisplayRecipe,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -77,21 +78,19 @@ fun RecipeContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "⏰Cooking time:"
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${recipe.readyInMinutes} min",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                if (recipe.readyInMinutes != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "⏰Cooking time:")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${recipe.readyInMinutes} min",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
                 if (recipe.cuisines.isNotEmpty()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Cuisine:"
-                        )
+                        Text(text = "Cuisine:")
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = recipe.cuisines.joinToString(", "),
@@ -110,24 +109,24 @@ fun RecipeContent(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = recipe.summary.replace(Regex("<.*?>"), ""), // Убираем HTML теги если есть
+                    text = recipe.summary.replace(Regex("<.*?>"), ""),
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = TextUnit(20f, TextUnitType.Sp)
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
-    // Ингредиенты
+        // Ингредиенты
         item {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp)
-        ) {
-            Text(
-                text = "Ingredients",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) {
+                Text(
+                    text = "Ingredients",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
         items(recipe.ingredients) { ingredient ->
@@ -142,7 +141,6 @@ fun RecipeContent(
         }
         // Шаги приготовления
         recipe.instructions.forEachIndexed { instructionIndex, instruction ->
-            // Заголовок для группы шагов (например, "Подготовка", "Приготовление")
             if (instruction.name?.isNotBlank() == true) {
                 item {
                     Text(
@@ -161,7 +159,6 @@ fun RecipeContent(
                 )
             }
 
-            // Разделитель между группами инструкций (кроме последней)
             if (instructionIndex < recipe.instructions.size - 1) {
                 item {
                     Spacer(modifier = Modifier.height(16.dp))

@@ -10,7 +10,9 @@ data class SearchMealEntity(
 
     val title: String,
 
-    val image: String
+    val image: String,
+
+    val cachedAt: Long = System.currentTimeMillis()
 ) {
     companion object{
         const val TABLE_NAME = "search_meals"

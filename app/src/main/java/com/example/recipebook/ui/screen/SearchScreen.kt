@@ -12,7 +12,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,7 +47,10 @@ fun SearchScreen(
     onNavigateToFavourites: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onToggleFavourite: (Int) -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onNavigateToMyRecipes: () -> Unit,
+    onNavigateToCollections: () -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -62,6 +68,19 @@ fun SearchScreen(
                             imageVector = Icons.Outlined.Favorite,
                             contentDescription = "Favourites"
                         )
+                    }
+                    IconButton(onClick = onNavigateToMyRecipes) {
+                        Icon(
+                            Icons.Default.Face,  // или другой значок
+                            contentDescription = "My Recipes"
+                        )
+                    }
+                    IconButton(onClick = onNavigateToCollections) {
+                        Icon(Icons.Default.Home, contentDescription = "Collections")
+                    }
+
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 }
             )

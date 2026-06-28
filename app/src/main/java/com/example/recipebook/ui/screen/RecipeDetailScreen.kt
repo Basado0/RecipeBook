@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.recipebook.models.toDisplayRecipe
 import com.example.recipebook.viewmodel.RecipeBookUiState
 import com.example.recipebook.ui.widget.RecipeContent
 
@@ -94,7 +95,7 @@ fun RecipeDetailScreen(
 
             uiState.selectedRecipe != null -> {
                 RecipeContent(
-                    recipe = uiState.selectedRecipe,
+                    recipe = uiState.selectedRecipe.toDisplayRecipe(),
                     modifier = Modifier.padding(paddingValues)
                 )
             }

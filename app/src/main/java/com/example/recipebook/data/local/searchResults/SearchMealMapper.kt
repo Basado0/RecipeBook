@@ -11,5 +11,6 @@ fun SearchMealEntity.toMeal(): Meal = Meal(
 fun Meal.toSearchMealEntity(): SearchMealEntity = SearchMealEntity(
     id = id,
     title = title,
-    image = image
+    image = image,
+    cachedAt = System.currentTimeMillis()
 )

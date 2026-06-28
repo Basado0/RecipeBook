@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.recipebook.api.MealRepository
+import com.example.recipebook.data.local.datastore.SettingsDataStore
 import com.example.recipebook.data.local.favourite.FavouriteRepository
 import com.example.recipebook.data.local.history.HistoryRepository
 import com.example.recipebook.models.Meal
@@ -62,7 +63,8 @@ data class RecipeBookUiState(
 class RecipeBookViewModel @Inject constructor(
     private val mealRepository: MealRepository,
     private val favouriteRepository: FavouriteRepository,
-    private val historyRepository: HistoryRepository
+    private val historyRepository: HistoryRepository,
+    private val settingsDataStore: SettingsDataStore
 ): ViewModel() {
 
     // Источник 1 - Поисковый запрос из UI
@@ -98,23 +100,24 @@ class RecipeBookViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val searchResultsFlow: Flow<List<Meal>> = debouncedQuery
         .flatMapLatest { query ->
-            // Объединяем query с retry триггером
             combine(
                 flowOf(query),
-                _retryTrigger.onStart { emit(Unit) }  // начальный запуск
+                _retryTrigger.onStart { emit(Unit) }
             ) { currentQuery, _ -> currentQuery }
         }
         .flatMapLatest { query ->
             if (query.isBlank()) {
-                // При пустом запросе показываем кэш из Room
                 cachedMealsFlow
             } else {
-                // Выполняем сетевой запрос
                 flow {
-                    val results = mealRepository.searchMeals(query)
-                    emit(results)
+                    val settings = settingsDataStore.settingsFlow.first()
+                    if (settings.offlineModeEnabled) {
+                        val cached = mealRepository.getLastCachedMeals()
+                        emit(cached)
+                    } else {
+                        emit(mealRepository.searchMeals(query))
+                    }
                 }.catch { e ->
-                    // При ошибке сети показываем кэш
                     emit(emptyList())
                 }
             }
@@ -157,7 +160,6 @@ class RecipeBookViewModel @Inject constructor(
     private val recipeFlow: Flow<RecipeState> = _selectedMealId
         .filterNotNull()
         .flatMapLatest { mealId ->
-            // Объединяем mealId с retry триггером
             combine(
                 flowOf(mealId),
                 _recipeRetryTrigger.onStart { emit(Unit) }
@@ -165,33 +167,32 @@ class RecipeBookViewModel @Inject constructor(
         }
         .flatMapLatest { mealId ->
             flow {
+                val settings = settingsDataStore.settingsFlow.first()
+                if (settings.offlineModeEnabled) {
+                    emit(RecipeState(error = "Offline mode enabled. Cannot load recipe details."))
+                    return@flow
+                }
+
                 emit(RecipeState(isLoading = true))
                 try {
                     val recipe = withTimeout(30_000) {
                         mealRepository.getRecipe(mealId)
                     }
-                    // Добавляем в историю без блокировки
                     viewModelScope.launch {
                         try {
-                            historyRepository.addToHistory(recipe.toMeal())
-                        } catch (e: Exception) {
-                            // Игнорируем ошибки истории
-                        }
+                            if (settings.autoSaveHistory) {
+                                historyRepository.addToHistory(recipe.toMeal())
+                            }
+                        } catch (_: Exception) { }
                     }
                     emit(RecipeState(recipe = recipe, isLoading = false))
                 } catch (e: TimeoutCancellationException) {
-                    emit(RecipeState(
-                        isLoading = false,
-                        error = "Request timed out. Please try again."
-                    ))
+                    emit(RecipeState(isLoading = false, error = "Request timed out. Please try again."))
                 } catch (e: Exception) {
                     if (e is CancellationException) {
                         emit(RecipeState(isLoading = false))
                     } else {
-                        emit(RecipeState(
-                            isLoading = false,
-                            error = "Couldn't load recipe: ${e.message}"
-                        ))
+                        emit(RecipeState(isLoading = false, error = "Couldn't load recipe: ${e.message}"))
                     }
                 }
             }

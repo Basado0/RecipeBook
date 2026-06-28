@@ -55,6 +55,7 @@ android {
 
 dependencies {
     implementation(libs.androidx.junit.ktx)
+    implementation(libs.androidx.work.testing)
     val nav_version = "2.9.6"
 
     implementation("androidx.navigation:navigation-compose:$nav_version")
@@ -66,6 +67,12 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("io.coil-kt:coil-compose:2.5.0")
+
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.hilt:hilt-work:1.1.0")
+    ksp("androidx.hilt:hilt-compiler:1.1.0")
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
@@ -89,6 +96,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.5")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("androidx.room:room-testing:2.6.1")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:4.1.0")
 
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.48")
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")

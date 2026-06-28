@@ -11,14 +11,16 @@ interface SearchMealDao {
     @Query("DELETE FROM ${SearchMealEntity.TABLE_NAME}")
     suspend fun deleteAll()
 
+    @Query("DELETE FROM ${SearchMealEntity.TABLE_NAME} WHERE cachedAt < :expirationTime")
+    suspend fun deleteOlderThan(expirationTime: Long)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(meals: List<SearchMealEntity>)
 
     @Query("SELECT * FROM ${SearchMealEntity.TABLE_NAME}")
     suspend fun getAll(): List<SearchMealEntity>
 
-    // Flow-версия (реактивное наблюдение за кэшем)
     @Query("SELECT * FROM ${SearchMealEntity.TABLE_NAME}")
-    fun observeAll(): Flow<List<SearchMealEntity>> // Flow вместо suspend
+    fun observeAll(): Flow<List<SearchMealEntity>>
 
 }
